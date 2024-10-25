@@ -1,0 +1,3 @@
+This repo is for homework and quizzes from PSY4802, Fall 2024 with Professor Amanda Woodward. 
+
+Quizzes and assignments were written by Dr. Woodward, answers are my own. Code in the 'final project' folder is my original work. 
