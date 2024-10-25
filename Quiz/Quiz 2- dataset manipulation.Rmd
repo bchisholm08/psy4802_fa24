@@ -8,16 +8,48 @@ output: html_document
 This quiz will focus on data frame manipulation, however, you may need to rely on skills you've learned in prior weeks. 
 
 1. load the starwars dataset from tidyverse
+```{r}
+library(tidyverse)
+data(starwars)
+```
 
 2. separate the films column so that there is one film in each column (don't worry about the "c(" and ) at the end for now)
-
+```{r}
+divideByFilm <- starwars %>% 
+  separate(films, into = paste0("film", 1:10), sep = ",", fill = "right")
+```
 
 3. alter the data from wide data to long data
+```{r}
+longFilm <- divideByFilm %>% pivot_longer(cols = starts_with("film"),
+                                          names_to = 'film_number',
+                                          values_to = 'film',
+                                          values_drop_na = 1)
+```
 
 4. in the column where you stored the films, rename the levels so each film name is consistent (e.g. get rid of the "c(" and ")" )
+```{r}
+filmsLonger <- longFilm %>% 
+  mutate(film = str_replace_all(film, "c\\(|\\)", ''))
+```
+I Googled for help with this question a lot more than usual. Now I know that R uses backslash as an escape character! 
 
 5. Create a column in your dataset that indicates whether a character was in the first starwars film, *Star Wars Episode IV: A New Hope* 
+```{r}
+filmsLonger <- filmsLonger %>% 
+  mutate(inFirstFilm = if_else(str_detect(film, "Star Wars: Episode IV: A New Hope"), TRUE, FALSE))
+```
 
 6. BMI is calculated as mass in Kg/height in meters. You currently have mass in Kg and height in cm. Create a column that contains each character's BMI. 
+```{r}
+filmsLonger <- filmsLonger %>% 
+  mutate(height_m = height / 100, 
+         bodyMassIndex = mass / (height_m ^2))
+```
 
 7. create a dataframe that contains only the name, hair color, and eye color for each character. 
+```{r}
+charInfo <- starwars %>% 
+  select(name, hair_color, eye_color)
+```
+
