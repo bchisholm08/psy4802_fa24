@@ -5,9 +5,92 @@ date: "2024-10-15"
 output: html_document
 ---
 1. Open the starwars dataset from tidyverse
+```{r}
+library(tidyverse)
+data(starwars)
+```
+
 2.Create a graph of character's eye color. (Hint: pay attention to the class of data)
+```{r}
+ggplot(starwars, aes(eye_color)) + 
+  geom_bar()
+```
+
+> Credit to https://coolors.co/ for the fun color palettes 
+
 3. Customize your graph to make it more presentable (consider axes, colors, themes)
+```{r}
+ggplot(starwars, aes(eye_color)) + 
+  geom_bar(stat= "count",
+           width = 1,
+            color = "#499607",
+           fill = "#5FDD9D")+ 
+  theme(
+      plot.title = element_text(size = 17, face = "bold", color = "#8B1E3F", hjust = 0.5),
+      axis.title.x = element_text(size = 13, face = "italic", color = "#1F2421"),
+      axis.title.y = element_text(size = 13, face = "italic", color = "#1F2421"),
+      axis.text.x = element_text(size = 8, face ='bold' ,angle = 45, hjust = 1)) +
+  ggtitle("Star Wars Eye Color Frequency") + 
+  xlab("Color") + 
+  ylab("Frequency")
+```
+
 4. Create a graph of character's height versus mass.
+```{r}
+ggplot(starwars, aes(height,mass))+
+  geom_point()
+```
+
 5. Customize this graph to make it more presentable.
-6. Create another graph of character's height and mass. Include sex as a third variable.  
+```{r}
+ggplot(starwars, aes(x = height, y = mass)) +
+  geom_point(color = "#88498F", size = 2, alpha = 0.7) +  
+  theme_minimal() +  
+  theme(
+      plot.title = element_text(size = 16, face = "bold", color = "#8B1E3F", hjust = 0.5),
+      axis.title.x = element_text(size = 13, face = "italic", color = "#1F2421"),
+      axis.title.y = element_text(size = 13, face = "italic", color = "#1F2421"),
+      axis.text.x = element_text(size = 8, face ='bold' ,angle = 0, hjust = .5)
+  ) +
+  scale_y_continuous(limits = c(0, 200), breaks = seq(0, 200, 25)) +  # help deal with funky data points. Unavoidable to omit? 29 rows 
+  scale_x_continuous(limits = c(50, 250), breaks = seq(50, 250, 25))  +
+  xlab("Height (cm)") +
+  ylab("Mass (kg)") +
+  ggtitle("Height & Mass of Star Wars Characters")
+```
+
+6. Create another graph of character's height and mass. Include sex as a third variable.
+```{r}
+ggplot(starwars, aes(x = height, y = mass, color = sex)) +
+  geom_point(size = 3, alpha = 0.7) + 
+  theme_void()  # void theme probably makes it worse than it has to be... 
+```
+
 7. Customize this graph to make it more presentable. 
+```{r}
+# remove missing to help plot 
+clean_starwars <- starwars %>%
+  filter(!is.na(sex))
+
+ggplot(clean_starwars, aes(x = height, y = mass, color = sex)) +
+  geom_point(size = 3, alpha = 0.45) + 
+  theme_minimal() + # why won't apa work? Updated ggplot... 
+  theme( 
+      plot.title = element_text(size = 16, face = "bold", color = "#CC8B86", hjust = 0.5),
+      plot.subtitle = element_text(size = 12, face = "italic", color = "black", hjust = 0.5),
+      axis.title.x = element_text(size = 11, face = "italic", color = "#1F2421"),
+      axis.title.y = element_text(size = 11, face = "italic", color = "#1F2421"),
+      axis.text.x = element_text(size = 8, face ='bold' ,angle = 0, hjust = .5)) +
+  scale_y_continuous(limits = c(0, 200), breaks = seq(0, 200, 25)) +  # help deal with funky data points. Unavoidable to omit? 29 rows 
+  scale_x_continuous(limits = c(50, 250), breaks = seq(50, 250, 25))  +
+  scale_color_manual(
+    values = c("#ef2d56", "#29335C", "#8cd867", "#ed7d3a")) +
+  labs(
+    x = "Height (cm)",
+    y = "Mass (kg)",
+    title = "Star Wars Character Height and Mass",
+    subtitle = "Sorted by Sex",
+    color = "Character Sex" # why color for legend title? not logical 
+  )
+```
+
