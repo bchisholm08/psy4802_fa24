@@ -1,0 +1,13 @@
+---
+title: "ggplot part 1 assignment"
+author: "Amanda Mae Woodward"
+date: "2024-10-15"
+output: html_document
+---
+1. Open the starwars dataset from tidyverse
+2.Create a graph of character's eye color. (Hint: pay attention to the class of data)
+3. Customize your graph to make it more presentable (consider axes, colors, themes)
+4. Create a graph of character's height versus mass.
+5. Customize this graph to make it more presentable.
+6. Create another graph of character's height and mass. Include sex as a third variable.  
+7. Customize this graph to make it more presentable. 
