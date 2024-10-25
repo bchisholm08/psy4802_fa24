@@ -1,0 +1,124 @@
+---
+title: "Dataset Manipulation Assignment"
+author: "Amanda Mae Woodward"
+date: "2024-10-08"
+output: html_document
+---
+```{r load packages}
+library(tidyverse)
+```
+
+```{r}
+# Load necessary libraries
+library(ggplot2)
+
+# Generate random data
+set.seed(123)
+data <- data.frame(values = rnorm(1000, mean = 50, sd = 10))
+
+# Create a poorly designed histogram
+bad_histogram <- ggplot(data, aes(x = values)) +
+  geom_histogram(bins = 50, fill = "green", color = "purple") +  # Too many bins
+  labs(title = "Histogram of Values",  # Misleading title
+       x = "Value",  # Vague x-axis label
+       y = "Number") +  # Misleading y-axis label
+  theme_minimal() +  # A clean theme that doesn't fit the context
+  xlim(0, 100) +  # Misleading x-axis limits
+  geom_vline(aes(xintercept = 70), color = "red", linetype = "dashed", size = 1) +  # Arbitrary line
+  geom_text(aes(x = 70, label = "Mean?"), y = 30, color = "black", size = 5)  # Confusing text label
+
+# Display the histogram
+print(bad_histogram)
+
+```
+
+#Part 1
+1.Open the sleep dataset in R 
+```{r}
+data(sleep)
+```
+
+2. Is it long or wide format? How do you know? 
+
+  This data is in long format, as subjID's and group repeat in rows 
+  
+3. Transform this data so that it is in the other format. 
+
+```{r}
+wideSleep <- sleep %>%
+  pivot_wider(names_from = group, 
+              values_from = extra)
+```
+
+4. Transform your data back to its original format. 
+
+```{r}
+longSleep <- wideSleep %>%
+  pivot_longer(cols = -ID, 
+               names_to = "group", 
+               values_to = "extra",
+               names_prefix = "group_")
+```
+
+5. Open the Starwars dataset
+```{r}
+data(starwars)
+```
+
+6. Create homeworld as a factor. How many levels does it have? 
+```{r}
+as.factor(starwars$homeworld)
+```
+
+7. Reorder homeworld so that Naboo is the reference group. 
+```{r}
+homeworld <- as.factor(starwars$homeworld)
+homeworld <- relevel(homeworld, ref = "Naboo") 
+levels(homeworld)
+# googled and found relevel() function/syntax on stackoverflow 
+```
+
+8. Use mutate to create a column transforming kg to pounds. (hint: you may need to look up the conversion)
+```{r}
+starwars <- starwars %>% 
+  mutate(massLbs = mass * 2.20462)
+```
+
+9. Print a summary of your column from #8
+```{r}
+summary(starwars$massLbs)
+```
+
+#Part 2
+10. open the billboard dataset.
+```{r}
+data(billboard)
+```
+
+11. are the data in this dataframe in long or wide format? explain how you know. 
+
+This data is in wide format because there is one single song per row, and the weeks span many columns 
+
+12. change the data from its original format to the other version. 
+```{r}
+bill_long <- billboard %>% 
+  pivot_longer(cols = starts_with("wk"), 
+               names_to = "week", 
+               values_to = "rank")
+```
+
+13. change it from your altered version in #3 back to its original state. 
+```{r}
+bill_wide <- bill_long %>% 
+  pivot_wider(names_from = "week", 
+              values_from = "rank")
+```
+
+14. Separate the date entered column into three columns: one for year, one for month, and one for day. 
+```{r}
+billboard <- billboard %>% 
+  separate(date.entered, 
+           into = c("year", "month", "day"), 
+           sep = "-")
+```
+This last question took some googling and scraping through the tidyverse documentation... 

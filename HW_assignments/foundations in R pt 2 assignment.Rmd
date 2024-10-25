@@ -1,0 +1,94 @@
+---
+title: "Foundations in R pt 2 assignment"
+author: "Amanda Mae Woodward"
+date: "2024-09-24"
+output: html_document
+---
+1. Load the tidyverse library. 
+```{r}
+library(tidyverse)
+```
+
+2. Load the billboard data. 
+```{r}
+data(billboard)
+```
+
+3. What type of data is this? (e.g. describe what's in the dataset).
+```{r}
+summary(billboard)
+```
+
+By using '?' in the console, we can pull up the documentation from the tidyr package authors. This tells us that the data contains song rankings for Billboard top 100 from the year 2000. 
+
+4. Print the column names from this dataset. 
+```{r}
+head(billboard)
+```
+
+5. Print the first 5 entries in the dataset. 
+```{r}
+head(billboard)
+```
+
+# Practice
+1. Create a subset of data that has Jay-Z as the only artist. How many songs are in it?
+
+```{r}
+jaySubset <- billboard %>% filter(artist == 'Jay-Z')
+```
+There are 5 songs 
+
+2. In the original dataset, use filter to find information about the song "All the small things." What was the highest position this song reached on the billboard 100? 
+```{r}
+ATSM_bestPosition <- subset(billboard, track == "All The Small Things")
+print(ATSM_bestPosition)
+```
+The highest position was 89th. 
+
+3. Create a subset of data for songs Tim McGraw sang. Summarize the data for wk 1.
+```{r}
+TIM_subset <- subset(billboard, billboard$artist== 'McGraw, Tim')
+summary(billboard$wk1)
+```
+
+4. Create a function that can be used to determine if Britney Spears sang the song. 
+```{r}
+didBritney <- function(x){
+  if (billboard$artist[x] == "Spears, Britney") {
+    TRUE} 
+  else {
+    FALSE}
+}
+didBritney(10) # false 
+didBritney(272)# true 
+```
+
+5. Test your function on the billboard data. Save the results to a new column called "wasItBritney"
+```{r}
+billboard$wasItBritney <- NA
+for (i in 1:length(billboard$artist)){
+  billboard$wasItBritney[i] <- didBritney(i)
+}
+```
+
+6. Use a for loop to determine if a song placed 50 or below or placed above 50 during the first week. 
+```{r}
+billboard$placedBelow50 <- NA 
+
+for (i in 1:length(billboard$wk1)) {
+  if (billboard$wk1[i] <= 50) {billboard$placedBelow50[i] <- TRUE} 
+  else {billboard$placedBelow50[i] <- FALSE}}
+
+print(billboard$placedBelow50)
+```
+
+7. Use an if else statement to determine the same information as you obtained with the for loop. 
+```{r}
+billboard$placedBelow50 <- ifelse(billboard$wk1 <= 50, TRUE, FALSE)
+print(billboard$placedBelow50)
+```
+
+8. Compare your results. 
+
+At a glance, these look identical to me. I would say the if else is much more effecient in this case. 

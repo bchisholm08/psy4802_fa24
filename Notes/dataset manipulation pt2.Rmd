@@ -1,0 +1,82 @@
+---
+title: "Dataset manipulation pt 2"
+author: "Amanda Mae Woodward"
+date: "2024-10-15"
+output: html_document
+---
+
+We're going to use this part of class to review how to do the learning outcomes from the dataset manipulation notes. 
+
+### load data
+1. Open the palmerpenguins library
+```{r}
+library(palmerpenguins)
+```
+
+2. Open the penguins dataset
+```{r}
+data(penguins)
+```
+
+3. Explore the raw dataset. What can you find out about it? 
+
+
+
+4. Are the data in long or wide format? 
+```{r}
+summary(as.factor(penguins_raw$`Sample Number`))
+summary(as.factor(penguins_raw$Species))
+summary(as.factor(penguins_raw$`Individual ID`)) # this is what we will use 
+# data is in long format
+```
+long data, but missing measurements for some penguins 
+
+
+5. let's practice going from one format to the other. 
+
+we are going from long to wide data. 
+using flipper length as the variable we want to measure 
+
+```{r}
+library(tidyverse) # pipeline
+widePengy <- penguins_raw %>%
+  pivot_wider(id_cols = 'Individual ID ', names_from = "Sample Number", values_from = "Flipper Length (mm)")
+
+tinyPenguin <- penguins_raw %>% select("Individual ID", "Sample Nnumber", "Flipper Length (mm)")
+
+tinyPenguinsWide <-  tinyPenguin %>% pivot_wider(id_cols = "Individual ID", names_from = "Sample Number", values_from = "Flipper Length (mm)")
+```
+
+6. create two datsets. One should have the individual id, region, and island. The other should have individual id, species, flipper length, culmen length, culmen depth, and body mass. 
+```{r}
+penguinSubOne <- select(penguins_raw, c("Individual ID", "Region","Island"))
+  
+penguinSubTwo <- select(penguins_raw, c("Individual ID","Species","Flipper Length (mm)","Culmen Length (mm)","Culmen Depth (mm)","Body Mass (g)"))
+```
+
+7. Join the two datasets you made together.
+```{r}
+a <- left_join(penguinSubOne, penguinSubTwo)
+# warning is telling you some ID's have multiple pieces of information 
+```
+
+8. Separate the species column into the common name and the scientific name 
+```{r}
+separate(penguins_raw, col = 'Species', into = c("commonName","scientificName"), (sep = " "))
+```
+
+9. change the levels of clutch completion to indicate whether the penguin has two eggs or does not have two eggs
+```{r}
+
+```
+
+10. create a column that has body mass in kilograms.
+```{r}
+
+```
+
+11. copy island to a new column. Recode this variable so that each island is renamed to be just the first initial
+```{r}
+
+```
+
