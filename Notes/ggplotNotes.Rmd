@@ -349,7 +349,6 @@ ggplot(worst_candies, aes(x = sugarpercent, y = pricepercent, color = winpercent
     ylab("Price %") +  
     ggtitle(":(      ") +
     coord_polar()
-
 ```
 
 ###Practice: 
@@ -395,12 +394,16 @@ I hope that the pattern is starting to make sense, but the only difference with 
 ### Practice: 
 1. Create a boxplot for carat.
 ```{r}
-
+ggplot(diamonds, aes(carat)) +
+  geom_boxplot(fill = "darkred", color = "burlywood")+
+  theme_classic()
 ```
 
 2. Create boxplots of carat for each level of cut.
 ```{r}
-
+ggplot(diamonds, aes(carat,cut)) +
+  geom_boxplot(fill = "darkred", color = "burlywood")+
+  theme_classic()
 ```
 
 3. **Bonus** play around with fill and color. What changes about your boxplots? 
@@ -414,13 +417,18 @@ There are many ways that we can include third variables.
 For bar graphs: 
 use fill = 
 ```{r}
-
+ggplot(diamonds, aes(price, fill = color)) + 
+  geom_histogram(bins = 100) +  # price is continuous, so use hist not bar 
+  theme_classic()
 ```
 
 For scatter plots: 
 color = 
 ```{r}
-
+ggplot(diamonds, aes(price,carat, color = color)) + 
+  geom_point()+ 
+  geom_jitter()+
+  theme_classic()
 ```
 
 Rather than having all bars/dots/lines the same color, you can have them change by using various packages and by looking up a few color codes online. 
@@ -429,45 +437,87 @@ If you don't like the colors, we can specify specific ones using `scale_fill_dis
 (need to specify option for color scales)
 We'll walk through these together because I think it's helpful to see what color combinations exist and how you can use them in a bar graph or a scatter plot.
 ```{r}
-
+ggplot(diamonds, aes(price, fill = color)) + 
+  geom_histogram(bins = 100) + 
+  theme_classic() + 
+  scale_fill_manual(values = c("#ffef38","#f7a41a","#dc700e","#9a570d","#275c78","#001649","black"))
 ```
-`scale_color_manual(values = #)`; 
+`scale_color_manual(values = #)`
 ```{r}
-
+ggplot(diamonds, aes(price,carat, color = color)) + 
+  geom_point()+
+  theme_classic()+
+  scale_color_manual(values =  c("#ffef38","#f7a41a","#dc700e","#9a570d","#275c78","#001649","black"))
 ```
 
 R ColorBrewer
 `scale_color_brewer(palette=)`
 ```{r}
+library(RColorBrewer)
+ggplot(diamonds,aes(price,carat,color = color)) + 
+  geom_point() +
+  scale_color_brewer(palette = "Set3")
 
+# same thing can be done with a histogram 
+ggplot(diamonds,aes(price,fill = color)) + 
+  geom_histogram(color = "black") +
+  scale_fill_brewer(palette = "Set3")
 ```
 
 Viridis
 `scale_color_viridis()`
 ```{r}
+library(viridis)
+ggplot(diamonds, aes(price,carat, color = table)) + 
+  geom_point()+ 
+  scale_color_viridis(discrete = FALSE, option = "H")
+```
 
+```{r}
+library(viridis)
+ggplot(diamonds, aes(price, fill = color)) + 
+  geom_histogram()+ 
+  scale_fill_viridis(discrete = TRUE, option = "H")
 ```
 
 
 I'll also show you how you can get color pallets online and find the associated color code. 
 
-
 ### Learning Outcome 4 Practice. 
 1. Create a graph of cyl and mpg in the mtcars dataset. 
 ```{r}
+library(ggplot2)
+mtcars$cyl <- as.factor(mtcars$cyl)
+ggplot(mtcars, aes(cyl,mpg)) + 
+  geom_point() + 
+  geom_jitter()
 
+# bar graph 
+
+# certain data requires recoding for specific plots 
+mpgByCyl <- mtcars %>% group_by(cyl) %>% summarize(mean = mean(mpg))
+
+ggplot(mpgByCyl, aes(cyl,mean)) + 
+  geom_bar(stat = "identity")
 ```
 
 2. In some way, include am as a third variable in this graph. 
 ```{r}
-
+ggplot(mtcars, aes(cyl,mpg)) + 
+  geom_point() + 
+  geom_point(aes(hp)) + 
+  geom_jitter()
 ```
 
 3. Create a graph of mpg and hp. 
 ```{r}
-
+ggplot(mtcars, aes(mpg,hp)) + 
+  geom_point()
 ```
+
 4. In some way, include gear as a third variable. 
 ```{r}
-
+ggplot(mtcars, aes(mpg,hp)) + 
+  geom_point(color = "green") + 
+  geom_smooth()
 ```

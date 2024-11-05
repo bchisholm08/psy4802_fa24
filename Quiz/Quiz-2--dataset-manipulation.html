@@ -393,15 +393,15 @@ film name is consistent (e.g. get rid of the “c(” and “)” )</li>
 </ol>
 <pre class="r"><code>filmsLonger &lt;- longFilm %&gt;% 
   mutate(film = str_replace_all(film, &quot;c\\(|\\)&quot;, &#39;&#39;))</code></pre>
-<p>I Googled this question a lot more than usual. Now I know that R uses
-backslash as an escape character!</p>
+<p>I Googled for help with this question a lot more than usual. Now I
+know that R uses backslash as an escape character!</p>
 <ol start="5" style="list-style-type: decimal">
 <li>Create a column in your dataset that indicates whether a character
 was in the first starwars film, <em>Star Wars Episode IV: A New
 Hope</em></li>
 </ol>
 <pre class="r"><code>filmsLonger &lt;- filmsLonger %&gt;% 
-  mutate(inFirstFilm = if_else(str_detect(film, &quot;Star Wars: Episode IV - A New Hope&quot;), TRUE, FALSE))</code></pre>
+  mutate(inFirstFilm = if_else(str_detect(film, &quot;Star Wars: Episode IV: A New Hope&quot;), TRUE, FALSE))</code></pre>
 <ol start="6" style="list-style-type: decimal">
 <li>BMI is calculated as mass in Kg/height in meters. You currently have
 mass in Kg and height in cm. Create a column that contains each

@@ -1,0 +1,95 @@
+---
+title: "ggplot part 2 assignment"
+author: "Amanda Mae Woodward"
+date: "2024-10-24"
+output: html_document
+---
+
+1. Open the starwars dataset (located in tidyverse)
+```{r}
+library(tidyverse)
+data(starwars)
+```
+
+2. Create a scatter plot of character's height and mass. 
+```{r}
+ggplot(starwars, aes(height,mass)) + 
+  geom_point() 
+```
+
+2a. Change the color and shape of the points in your scatter plot. 
+```{r}
+ggplot(starwars, aes(height,mass)) + 
+  geom_point(shape = 10 , color = "red")
+```
+
+3. Add Homeworld as a third variable to your scatterplot. 
+```{r}
+ggplot(starwars, aes(x = height, y = mass, color = homeworld)) + 
+  geom_point()
+```
+
+3a. What do you notice about the graph? (e.g. describe what you see)
+
+There are so many different homeworldss in the key that the graph itself is tiny in the preview window-- extremely skinny! I would probably try to find a different way to present this data if it wasn't for an assignment. 
+
+4. Make a boxplot of height. 
+```{r}
+ggplot(starwars, aes(,y = height)) + 
+  geom_boxplot()
+```
+
+5. Make a boxplot of height for each species present in the data. 
+```{r}
+ggplot(starwars, aes(height, species)) + 
+  geom_boxplot()
+```
+
+5a. change the appearance of your graph in at least 3 ways. 
+```{r}
+ggplot(starwars, aes(height, species)) + 
+  geom_boxplot() + 
+  theme_minimal() + 
+  theme(
+    plot.background = element_rect(colour = "lightgray"),
+    axis.title.x = element_text(color = "black", hjust = .5)) + 
+  labs(
+    x = "Height (cm)",
+    title = "Starwars Characters Height and Species")
+```
+
+6. Using any variables in the starwars dataset, create a graph that uses a color palette from viridis.
+```{r}
+ggplot(starwars, aes(height, mass, color = species)) + 
+  geom_point() + 
+  scale_color_viridis_d(alpha = 0.5, option = "G") + 
+  theme_minimal() + 
+  labs(
+    x = "Height (cm)",
+    title = "Starwars Characters Height and Species",
+    y = "Mass (kg)")
+```
+
+7.Using any variables in the starwars dataset, create a graph that uses a color palette from RColorBrewer.
+```{r}
+library(RColorBrewer)
+ggplot(starwars, aes(height, mass, color = eye_color)) + 
+  geom_point() + 
+  scale_color_brewer(palette = "Pastel2") + 
+  theme_classic() + 
+  labs(title = "Height vs Mass Organized by Eye Color", 
+       x = "Height (cm)", 
+       y = "Mass (kg)")
+
+```
+
+8. Using any variables in the starwars dataset, create a graph using facet_wrap
+```{r}
+ggplot(starwars, aes(height, mass)) + 
+  geom_point(color = "lightgreen") + 
+  facet_wrap(~ species) + 
+  theme_light() + 
+  labs(title = "Height vs Mass by Species", 
+       x = "Height (cm)", 
+       y = "Mass (kg)")
+```

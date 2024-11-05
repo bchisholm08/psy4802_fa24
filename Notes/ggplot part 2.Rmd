@@ -19,12 +19,26 @@ It can also be helpful to understand how to modify your legend:
 Let's try this on a graph from the diamonds dataset: 
 Create a subset of the diamonds dataset:
 ```{r}
+library(tidyverse)
+data(diamonds)
 
+ggplot(diamonds, aes(carat,price,color = cut)) + 
+  geom_point() +
+  theme(
+   legend.position = "none" 
+  )
 ```
 
 We can also change the location: 
 ```{r}
+library(tidyverse)
+data(diamonds)
 
+ggplot(diamonds, aes(carat,price,color = cut)) + 
+  geom_point() +
+  theme(
+   legend.position = "bottom" 
+  )
 ```
 
 To Change the legend title, you can use a couple of different codes, depending on the type of data: 
