@@ -1,0 +1,131 @@
+---
+title: "PSY 4802- Quiz 4"
+author: "Amanda Mae Woodward"
+date: "2024-11-19"
+output: html_document
+---
+```{r}
+library(ggplot2)
+```
+
+For this assignment, we're going to use data that were collected by Rentfrow et al on the big five personality traits across regions of the U.S.
+
+1) import the ANOVA OCEAN by state dataset 
+```{r}
+oceanData <-  read.csv("~/Desktop/FA24 Syllabi:Schedules/PSY4802_Using_R_to_Create_Reproducible_Research/Quiz/ANOVA OCEAN by state.csv")
+```
+
+2. Find the correlation between openness scores (o) and extraversion (e)
+```{r}
+cor.test(oceanData$E, oceanData$O)
+#### the correlation is both relatively weak and negative, -0.16. 
+```
+
+3. Create a graph to accompany your analysis. 
+```{r}
+# decorate graph 
+ggplot(oceanData, aes(x = E, y = O)) +
+  geom_point(color = "#F34213", size = 3, alpha = 0.7) +  
+  geom_smooth(method = "lm", se = TRUE, color = "#08A045",size = 0.7) +
+  labs(
+    title = "Relationship of Extraversion and Openness",
+    x = "Extraversion ",
+    y = "Openness"
+  ) +  
+  theme_minimal() +  
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5), 
+    axis.title = element_text(size = 14),  
+    axis.text = element_text(size = 12),  
+    panel.grid.major = element_line(color = "gray80", linetype = "dotted"),  
+    panel.grid.minor = element_blank()
+  )  
+```
+
+4. Create a subset of your data containing only east coast and midwest data.
+```{r}
+regionalData <- subset(oceanData, Region %in% c("NE", "MW"))
+```
+
+5. Using this dataset, run a t test to determine if the agreeableness (A) levels differ between the midwest and east coast
+```{r}
+midwestDat <- subset(regionalData, Region == "MW")
+
+eastCoastDat <- subset(regionalData, Region == "NE")
+
+regionalT <- t.test(midwestDat$A, eastCoastDat$A, var.equal = FALSE)
+print(regionalT)
+```
+Based on the results of our t-test, we can state that the mean difference in agreeableness between residents of the Midwest and East Coast is not equal to zero and is in fact significantly different. 
+
+6. create a graph to illustrate your findings.
+```{r}
+ggplot(regionalData, aes(x = Region, y = A, fill = Region)) +
+  geom_violin(trim = FALSE, alpha = 0.7) +
+  geom_boxplot(width = 0.4, fill = "#F7B32B") +
+  labs(
+    title = "Distribution of Agreeableness Levels by Region",
+    x = "Region",
+    y = "Agreeableness"
+  ) +
+  theme_minimal() +
+  scale_fill_manual(values = c("NE" = "#17BEBB", "MW" = "#D62246")) +
+  theme(legend.position = "none",
+        plot.title = element_text(size = 16, face = "bold", hjust = 0.5) 
+        )
+```
+
+7. create a subset of the original dataset containing data from the west and south. 
+```{r}
+SW_subset <- subset(oceanData, Region %in% c("S","W"))
+```
+
+8. run a correlation between region and openness. 
+```{r}
+corrResult <- aov(O ~ Region, data = oceanData)
+summary(corrResult)
+```
+
+9. create a graph to accompany this analysis
+```{r}
+ggplot(oceanData, aes(x = Region, y = O, fill = Region)) +
+  geom_boxplot(outlier.color = "#3D0B37") +
+  stat_summary(fun = mean, geom = "point", shape = 23, size = 5, fill = "white", color = "#1F363D") +
+  labs(
+    title = "Openness Across Region",
+    x = "Region",
+    y = "Openness"
+  ) +
+  scale_fill_brewer(palette = "Pastel1") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12),
+    legend.position = "none")
+```
+
+10. Going back to your original dataset, run an ANOVA to determine if neuroticism (N) differs across region. create a graph to accompany your analysis. 
+```{r}
+# Run ANOVA
+anova_result <- aov(N ~ Region, data = oceanData)
+summary(anova_result)
+```
+Our ANOVA result is significant, and mean reported neuroticism does differ significantly across regions. 
+```{r}
+ggplot(oceanData, aes(x = Region, y = N, fill = Region)) +
+  geom_boxplot(outlier.color = "#DE3C4B", alpha = 0.7) +
+  stat_summary(fun = mean, geom = "point", color = "black", fill = "white") +
+  labs(
+    title = "Neuroticism Across Region",
+    x = "Region",
+    y = "Neuroticism"
+  ) +
+  scale_fill_brewer(palette = "Set3") +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(size = 16, face = "bold", hjust = 0.5),
+    axis.title = element_text(size = 14),
+    axis.text = element_text(size = 12), 
+   legend.position = "none") # suppress since already labeled on x 
+```

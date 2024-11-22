@@ -1,0 +1,78 @@
+---
+title: "Statistics in R Assignment"
+author: "Amanda Mae Woodward"
+date: "2024-11-05"
+output: html_document
+---
+
+1. Open the diamonds dataset from ggplot2.  
+```{r}
+library(ggplot2)
+data(diamonds)
+head(diamonds)
+```
+
+2. Run a correlation between the x and y variables. What do you notice? 
+```{r}
+cor.test(diamonds$x,diamonds$y)
+# These two variables are highly correlated, 0.97. There is almost a perfect positive linear relationship between the x and y variables from the dataset 
+```
+
+3. What is the correlation between price and carat?
+```{r}
+cor.test(diamonds$carat, diamonds$price)
+# These two variables also have a strong positive linear relationship, 0.92. 
+```
+
+4. Create a linear model predicting price from table. What is the coefficient for table? 
+```{r}
+priceTabMod <- lm(price ~ table, data = diamonds)
+summary(priceTabMod)
+# The coefficient for the table variable is 226.984. 
+```
+
+5. Run a regression and an Anova predicting price from color. What do you notice about the two types of output? 
+```{r}
+# create linear model 
+priceColorMod <- lm(price ~ color, data = diamonds)
+summary(priceColorMod)
+
+# create anova model 
+priceColorANOVA <- aov(price ~ color, data = diamonds)
+summary(priceColorANOVA)
+
+# The output of these functions will be the same since they are mathematically identical 
+```
+
+6. Run a t test to determine if "D" color diamonds are more expensive than "E" color diamonds. 
+```{r}
+# First, going to need to subset the data since the color data is a leveled factor 
+d_dia <- subset(diamonds, color == "D")
+e_dia <- subset(diamonds, color == "E")
+
+t.test(d_dia$price, e_dia$price, alternative = "greater")
+# summary()
+
+# Based on the results of the statistical test, 'D' color diamonds are typically more expensive than 'E' color diamonds. 
+```
+
+7. Open the warpbreaks dataset. What test would you use to determine the correlation between wool type and breaks?
+```{r}
+data(warpbreaks)
+head(warpbreaks)
+# To find the correlation between these two variables I would use a Pearson Correlation. However, I think I would need to change the wool type either to a numeric or a factor so the function would be able to handle the data class 
+```
+
+8. What is the correlation between wool type and breaks? 
+```{r}
+cor.test(as.numeric(warpbreaks$wool),warpbreaks$breaks)
+# The correlation is negative, and -0.22. 
+```
+
+9. A student has a 35 question, multiple choice test. Each question has 4 choices. If they answered 17 questions correctly, did their responses differ from chance?  
+```{r}
+studentAns <- binom.test(17, 35, p = 0.25, alternative = "greater")
+studentAns
+# The response of the student did not differ from chance, since our p-value exceeds 0.05.  
+```
+
