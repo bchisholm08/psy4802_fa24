@@ -1,0 +1,151 @@
+---
+title: "finalAnalysis_v0.0.1"
+author: "Brady M. Chisholm"
+date: "2024-11-25"
+output: html_document
+---
+
+This is preliminary analysis, v0.0.1 and will be updated further.
+
+A note about the data:
+Each pupil dilation measurement for a subject from that specific combination of conditions (4 SNR condition, 5 quintiles), averaged from 7-9 seconds. This generates 20 measurements per subject. For example, the first subject in this data is P02, and their data occupies the first 20 rows. P03 follows, etc. 
+
+Ideally this analysis is not done with an average of conditions for each, and is thousands of rows longer with trial-by-trial data. This is the first deep dive into this data, and more precise statistics can be done later as an extension on this work. 
+
+First load in data 
+```{r}
+pupilDat <- read.csv("~/Desktop/FA24 Syllabi:Schedules/PSY4802_Using_R_to_Create_Reproducible_Research/Final Project/code/quintileData.csv")
+
+#FIXME github dat and use permalink instead 
+```
+
+Check spread of data, and basic summary statistics 
+```{r}
+library(dplyr) # in ggplot? 
+library(ggplot2)
+library(mgcv) # best documentation available for GAMs that I found. 
+
+# summary stats table
+print(as.data.frame(summary_stats <- pupilDat %>%
+  group_by(SNR, Quintile) %>%
+  summarise(
+    Mean_Dilation = mean(AvgPupilDilation, na.rm = TRUE),
+    Med_Dilation = median(AvgPupilDilation, na.rm = TRUE),
+    SD_Dilation = sd(AvgPupilDilation, na.rm = TRUE),
+    Min_Dilation = min(AvgPupilDilation, na.rm = TRUE),
+    Max_Dilation = max(AvgPupilDilation, na.rm = TRUE),
+    Count = n()),n=Inf))
+# tibble gets truncated for some reason... 
+```
+
+```{r}
+# Check distribution of pupilDilation w/ histogram
+ggplot(pupilDat, aes(x = AvgPupilDilation)) +
+  geom_histogram(binwidth = 0.05, color = "black", fill = "skyblue") +
+  geom_density(alpha = 0.6, fill = "red") +
+  labs(title = "Avg Pupil Dilation", x = NULL, y = NULL,
+       subtitle = "with density shown in red")
+```
+
+The histogram looks relatively well distributed, with maybe a small left-skew. This should not impact the GAM, but it is something to remember if we get any suspicious results 
+
+```{r}
+# plot spread of predictor vars against dilation
+ggplot(pupilDat, aes(x = factor(SNR), y = AvgPupilDilation, fill = factor(Quintile))) +
+  geom_boxplot() +
+  labs(
+      title = "Avg Dilation by SNR & Quintile", 
+       x = "SNR", 
+       y = "Dilation", 
+       fill = "Quintile") +
+  theme_minimal()
+```
+
+```{r}
+# what trends or relationships exist in the data? 
+ggplot(pupilDat, aes(x = SNR, y = AvgPupilDilation)) +
+  geom_point(alpha = 0.5) +
+  geom_smooth(color = "blue", se = TRUE) + # defaulted to loess? Why? 
+  labs(title = "Avg Pupil Dilation vs. SNR", x = "SNR Level", y = "Avg Pupil Dilation") +
+  theme_minimal()
+```
+
+### Data Cleaning
+For using a gam, we should be treating 
+
+
+```{r}
+# REMEMBER k = # of knots. SNR has 4 levels, so 4 knots
+
+# 1st model includes no interactions terms
+gam_mod1 <- gam(AvgPupilDilation ~ s(SNR, k = 4) + s(Quintile, k = 5), data = pupilDat)
+summary(gam_mod1)
+
+plot(gam_mod1, pages = 1)
+```
+
+```{r}
+# interaction between SNR & quintile
+gam_mod2 <- gam(AvgPupilDilation ~ te(SNR, Quintile,k = 4), data = pupilDat)
+summary(gam_mod2)
+
+plot(gam_mod2, pages = 1)
+
+gam.check(gam_mod2) # built in diagnostic function 
+```
+
+```{r}
+gam_mod3 <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4) + s(SNR, k=4) + s(Quintile, k = 5) + s(SubjID, bs = "re"), data = pupilDat)
+
+summary(gam_mod3)
+
+plot(gam_mod3, pages = 1)
+```
+
+Compare initial models we've constructed 
+```{r}
+AIC(gam_mod1,gam_mod2,gam_mod3)
+```
+
+Based on AIC, mod1 and mod3 are nearly identical at predicting pupil dilation response. However, the difference in AIC score between all three models is not significant. 
+```{r}
+BIC(gam_mod1,gam_mod2,gam_mod3)
+```
+
+```{r}
+model_comparison <- data.frame(
+  Model = c("Mod_1", "Mod_2", "Mod_3"),
+  AIC = c(AIC(gam_mod1), AIC(gam_mod2), AIC(gam_mod3)),
+  BIC = c(BIC(gam_mod1), BIC(gam_mod2), BIC(gam_mod3))
+)
+
+knitr::kable(model_comparison, digits = 3, caption = "Comparison of AIC & BIC")
+```
+
+BIC indicated model 3 is the best fit, but by a negligible difference. BIC of 2-10 is considered significant enough for choosing a different model 
+
+We get significant results for all models when looking at the main effect of SNR on pupil dilation. 
+
+Quintile is not significant in any of these models, however it is likely due to the fact that this data is 940 rows and should really be thousands with more raw data included over averages. To further this analysis, we would want to rework how we produce the data table from the project for statistics. This is done in MATLAB (as the raw data is in .mat format), and it beyond the scope of what I've done here, but is the next step for furthering this work. 
+
+Another step would be to bootstrap the data and see how results look when we have significantly more data. 
+
+In summary, initial results indicate that there is a 
+
+```{r}
+ggplot(pupilDat, aes(Quintile, AvgPupilDilation)) + 
+  geom_point() + 
+  geom_jitter()
+``` 
+For data cleaning points: Add tensor flow, reorganize columns, 
+GAM is washed. Use GLMER model to wrap up semester
+generalized linear mixed effect model | glmer package? | glmm is still maintained? 
+```{r}
+library(lme4)
+```
+
+```{r}
+glmPupilDat <- pupilDat
+```
+
+

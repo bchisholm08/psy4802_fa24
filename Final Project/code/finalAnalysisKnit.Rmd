@@ -1,0 +1,200 @@
+---
+title: "finalAnalysis_v0.0.1"
+author: "Brady M. Chisholm"
+date: "2024-11-25"
+output: html_document
+---
+## Analysis Overview
+
+In this pupil dilation data, measurements are one subjects average under specific combinations of conditions (4 SNR conditions, 5 quintiles), averaged over the 7-9 seconds time stamp in a trial. 
+
+This results in 20 measurements per subject. For example, the first subject in this data set is P02, occupying the first 20 rows, followed by P03, etc. 
+
+This analysis serves as an initial exploration. Ideally, the data should include trial-by-trial measurements (not averages), which would significantly increase temporal resolution and the quality of our statistics. Future analyses will extend this work using raw data instead of the averages, and depending on results, a different model too.
+
+
+
+## Load Data, prep
+```{r}
+library(dplyr)
+library(ggplot2)
+library(mgcv) 
+library(lme4) 
+library(boot)
+
+# Load data (git link?)
+pupilDat <- read.csv("~/Desktop/FA24 Syllabi:Schedules/PSY4802_Using_R_to_Create_Reproducible_Research/Final Project/code/quintileData.csv")
+```
+
+## Data Cleaning
+```{r}
+# make sure all data is in proper format for statistics functions
+pupilDat$SNR <- as.numeric(as.character(pupilDat$SNR))
+pupilDat$Quintile <- as.numeric(as.character(pupilDat$Quintile))
+pupilDat$SubjID <- as.factor(pupilDat$SubjID)
+
+
+```
+
+## Summary Statistics
+```{r}
+# Calculate summary statistics of SNR and Quintile. Get familiar with data 
+summary_stats <- pupilDat %>%
+  group_by(SNR, Quintile) %>%
+  summarise(
+    Mean_Dilation = mean(AvgPupilDilation, na.rm = TRUE),
+    Med_Dilation = median(AvgPupilDilation, na.rm = TRUE),
+    SD_Dilation = sd(AvgPupilDilation, na.rm = TRUE),
+    Min_Dilation = min(AvgPupilDilation, na.rm = TRUE),
+    Max_Dilation = max(AvgPupilDilation, na.rm = TRUE),
+    Count = n()
+  )
+
+print(as.data.frame(summary_stats))
+```
+
+## Check data distribution
+```{r}
+# Plot histogram and density
+ggplot(pupilDat, aes(x = AvgPupilDilation)) +
+  geom_histogram(binwidth = 0.05, color = "black", fill = "skyblue") +
+  geom_density(alpha = 0.7, fill = "purple") +
+  labs(
+    title = "Distribution of Avg Pupil Dilation",
+    subtitle = "Histogram with density plot",
+    x = "Avg Pupil Dilation",
+    y = "Freq."
+  ) +
+  theme_minimal()
+```
+
+## GAMS
+```{r}
+# for mod 1, regular GAM w/o interactions
+gam_mod1 <- gam(AvgPupilDilation ~ s(SNR, k = 4) + s(Quintile, k = 5), data = pupilDat)
+summary(gam_mod1)
+plot(gam_mod1, pages = 1) # groupme
+```
+
+## Mod2
+```{r}
+# mod 2; use a tensor interaction of SNR & quintile 
+# k = total levels of two vars or highest / lowest...? 
+gam_mod2 <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4), data = pupilDat)
+summary(gam_mod2)
+plot(gam_mod2, pages = 1)
+```
+
+```{r}
+gam.check(gam_mod2) # diagnostic plots
+```
+
+## Mod3
+```{r}
+# mod 3, both interactions and random effects 
+gam_mod3 <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4) + s(SNR, k = 4) + s(Quintile, k = 5) + s(SubjID, bs = "re"), data = pupilDat)
+summary(gam_mod3)
+plot(gam_mod3, pages = 1)
+```
+
+## Compare models 
+```{r}
+model_comparison <- data.frame(
+  Model = c("Mod_1", "Mod_2", "Mod_3"),
+  AIC = c(AIC(gam_mod1), AIC(gam_mod2), AIC(gam_mod3)),
+  BIC = c(BIC(gam_mod1), BIC(gam_mod2), BIC(gam_mod3))
+) # start with AIC and BIC 
+
+knitr::kable(model_comparison, digits = 3, caption = "Model Comparison: AIC & BIC")
+```
+
+## LME 
+```{r}
+# for fun, check GLME model
+lmer_mod <- lmer(AvgPupilDilation ~ SNR * Quintile + (1 | SubjID), data = pupilDat)
+summary(lmer_mod)
+```
+
+## plot results
+```{r}
+# scatter pupil & quintile
+ggplot(pupilDat, aes(x = Quintile, y = AvgPupilDilation)) +
+  geom_jitter(alpha = 0.5) +
+  geom_smooth(method = "loess", color = "blue", se = TRUE) +
+  labs(
+    title = "Avg Pupil Dilation vs. Quintile",
+    x = "Quintile",
+    y = "Avg Pupil Dilation"
+  ) +
+  theme_minimal()
+```
+
+## Bootstrapping the Data
+```{r}
+# Define a function for bootstrapping
+bootstrap_sample <- function(data, indices) {
+  d <- data[indices, ]  # Resample with replacement
+  return(d)
+}
+
+# Perform bootstrapping with 1000 replicates
+set.seed(123)  # For reproducibility
+bootstrapped_data <- do.call(rbind, replicate(1000, pupilDat[sample(1:nrow(pupilDat), replace = TRUE), ], simplify = FALSE))
+```
+
+Rerunning Models with Bootstrapped Data. Not sure of all GAM details, so its possible that the small sample size is creating some issues for the model. 
+
+## mod1 bootstrap
+```{r}
+# no interactions
+gam_mod1_boot <- gam(AvgPupilDilation ~ s(SNR, k = 4) + s(Quintile, k = 5), data = bootstrapped_data)
+summary(gam_mod1_boot)
+plot(gam_mod1_boot, pages = 1)
+```
+
+## mod2 bootstrap
+```{r}
+# interactions 
+gam_mod2_boot <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4), data = bootstrapped_data)
+summary(gam_mod2_boot)
+plot(gam_mod2_boot, pages = 1)
+```
+
+```{r}
+# full bootstrap model 
+gam_mod3_boot <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4) + s(SNR, k = 4) + s(Quintile, k = 5) + s(SubjID, bs = "re"), data = bootstrapped_data)
+summary(gam_mod3_boot)
+plot(gam_mod3_boot, pages = 1)
+```
+
+```{r}
+# compare bootstrap models to real models, same criteria 
+model_comparison_boot <- data.frame(
+  Model = c("Mod_1_Boot", "Mod_2_Boot", "Mod_3_Boot"),
+  AIC = c(AIC(gam_mod1_boot), AIC(gam_mod2_boot), AIC(gam_mod3_boot)),
+  BIC = c(BIC(gam_mod1_boot), BIC(gam_mod2_boot), BIC(gam_mod3_boot))
+)
+combined_comparison <- rbind(
+  cbind(model_comparison, Source = "Original"),
+  cbind(model_comparison_boot, Source = "Bootstrapped")
+)
+knitr::kable(combined_comparison, digits = 3, caption = "Model Comparison: Original vs Bootstrapped Data")
+```
+
+Models were rerun on the bootstrapped dataset to increase sample size and improve stability. The comparison of AIC and BIC metrics provides insights into whether bootstrapping improves model performance. Interpretations should consider both fit and overfitting risks.
+```{r}
+# Corr matrix for og data
+cor_matrix_original <- stats::cor(pupilDat %>% select_if(is.numeric), use = "complete.obs")
+
+# print matrix
+#stats::corrplot(cor_matrix_original, method = "color", title = "Correlation Matrix: Original Data", mar = c(0,0,1,0))
+```
+
+ Bootstrapped Data
+```{r}
+# Compute correlation matrix for bootstrapped data
+cor_matrix_bootstrapped <- cor(bootstrapped_data %>% select_if(is.numeric), use = "complete.obs")
+
+# Visualize correlation matrix
+#corrplot(cor_matrix_bootstrapped, method = "color", title = "Correlation Matrix: Bootstrapped Data", mar = c(0,0,1,0))
+```

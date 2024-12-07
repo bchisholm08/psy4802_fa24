@@ -1,0 +1,193 @@
+---
+title: "Troubleshooting assignment fall 2024"
+author: "Amanda Mae Woodward"
+date: "2024-11-19"
+output: html_document
+---
+For this assignment, make sure that all code runs and that you can knit the assignmnet. Some chunks have instructions on how to fix it, others are more open ended. 
+```{r}
+library(palmerpenguins)
+library(ggplot2)
+library(tidyverse)
+library(tidyr)
+library(viridis)
+```
+
+1.
+```{r}
+person_dat <- data.frame(
+  height = c(150, 160, 170, 180, 190),
+  weight = c(55, 65, 75, 85, 95), 
+  age = c(25, 30, 35, 40, 45), 
+  equator_Living = c('North','South','South','North','South')
+)
+
+mod1 <- lm(height + weight + age ~ equator_Living, data = person_dat)
+summary(mod1)
+
+```
+
+2. Using any variables in the starwars dataset, create a graph using facet_wrap
+```{r}
+ggplot(starwars, aes(x = height, y = mass)) +
+  geom_point(shape = 7) +
+  facet_wrap(~sex) +
+  ylab("mass") +
+  xlab("height")
+```
+
+3. 
+```{r}
+evenorodd <- function(number){
+  ifelse(number %% 2 == 0, "Even", "Odd")
+}
+
+evenorodd(3)
+```
+
+4. 
+```{r}
+ggplot(mtcars, aes(mpg, hp)) +
+  geom_point(aes(color = factor(cyl))) +
+  geom_smooth(method = "lm", se = TRUE)
+```
+
+5. 
+```{r}
+penguins <- palmerpenguins::penguins
+
+if (!"clutchCompletion" %in% colnames(penguins)) {
+  # For illustration, let's create a clutchCompletion column with random "Yes" and "No" values
+  set.seed(123)  # For reproducibility
+  penguins$clutchCompletion <- sample(c("Yes", "No", NA), size = nrow(penguins), replace = TRUE)
+}
+
+penguins$clutchCompletion <- dplyr::case_when(
+  penguins$clutchCompletion == "Yes" ~ "has two eggs",
+  penguins$clutchCompletion == "No" ~ "does not have two eggs",
+  TRUE ~ NA_character_ 
+)
+
+penguins_clean <- penguins %>%
+  drop_na()
+
+ggplot(penguins_clean, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point() +
+  labs(title = "Bill Length & Bill Depth by Species",
+       x = "Bill Length (mm)",
+       y = "Bill Depth (mm)") +
+  theme_minimal()
+
+```
+
+6. 
+```{r}
+modA <- lm(x ~ y, data = diamonds)
+summary(modA)
+```
+
+7. 
+```{r}
+ggplot(mtcars, aes(mpg, wt)) +
+  theme_classic() +
+  ylab("Weight") +
+  xlab("Miles Per Gallon") +
+  ggtitle("Motor Trend Graph")
+```
+
+8. 
+```{r}
+ggplot(diamonds, aes(price, fill = color)) +
+  geom_bar() +
+  scale_fill_manual(values = c("red", "magenta", "darkorange", "green", "skyblue", "pink", "yellow"))
+```
+
+9.
+```{r}
+rankingLong <- billboard %>%
+  pivot_longer(cols = starts_with("wk"), names_to = "week", values_to = "ranking")
+```
+
+10. Create a dataframe using pipes that contains the name, height, and homeworld for each
+character using the starwars dataset.
+```{r}
+starwars %>% select(name, height, homeworld)
+```
+
+11. 
+```{r}
+lmCars <- lm(mpg ~ cyl, data = mtcars)
+summary(lmCars)
+```
+
+12. 
+```{r}
+ggplot(mtcars, aes(cyl, fill = factor(am))) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Pastel2")
+```
+
+13. 
+```{r}
+ggplot(starwars, aes(skin_color, mass, fill = homeworld)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  facet_wrap(~ homeworld)
+```
+
+14. 
+```{r}
+participants <- c(1, 2, 3, 4, 5)
+spiceTolerant <- c("high", "medium", "medium", "high", "high")
+numOfSpicyChicken <- c(11, 2, 3, 20, 0.5)
+spicyDat <- data.frame(participants, spiceTolerant, numOfSpicyChicken)
+```
+
+15. 
+
+```{r}
+ggplot(spicyDat, aes(participants, numOfSpicyChicken)) +
+  geom_bar(stat = "identity") +
+  theme_classic() +
+  xlab("Participants") +
+  ylab("Number of Spicy Chicken Eaten")
+```
+
+16.
+```{r}
+separateProblem <- c("bloob bloob", "bloob blub", "bloob blob", "bloob blab", "blood bleb", "bloob blib", "blob bloob", "blob bub", "blob blob", "blob blib", "blob bleb", "blob blab")
+
+separateProblem1 <- c("cloob cloob", "cloob club", "cloob clob", "cloob clab", "cloob cleb", "cloob clib","clob cloob", "clob club", "clob clob", "clob clib", "clob cleb", "clob clab")
+
+# Create a data frame using the two vectors
+separateProblemDF <- data.frame(separateProblem, separateProblem1, stringsAsFactors = FALSE)
+
+# Use the separate function to split the `separateProblem1` column
+separatedProblemDF <- separate(separateProblemDF, col = separateProblem1, into = c("oob", "_b"), sep = " ")
+
+# Display the resulting data frame
+print(separatedProblemDF)
+
+```
+
+17. 
+```{r}
+ggplot(diamonds, aes(price, carat, color = cut)) +
+  geom_point() +
+  scale_color_viridis(option = "J", discrete = TRUE) +
+  theme(legend.position = "bottom")
+```
+
+18. 
+```{r}
+data(mtcars)
+pgANOVA <- aov(mpg ~ as.factor(cyl), data = mtcars)
+
+TukeyHSD(pgANOVA)
+```
+
+19. 
+```{r}
+ggplot(starwars, aes(height, mass)) +
+  geom_point(color = "#ffef38") +
+  theme_classic()
+```
