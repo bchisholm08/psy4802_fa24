@@ -1,200 +1,244 @@
 ---
-title: "finalAnalysis_v0.0.1"
+title: "psy4802_finalProjectAnalysis"
 author: "Brady M. Chisholm"
 date: "2024-11-25"
 output: html_document
 ---
-## Analysis Overview
+
+## Overview
 
 In this pupil dilation data, measurements are one subjects average under specific combinations of conditions (4 SNR conditions, 5 quintiles), averaged over the 7-9 seconds time stamp in a trial. 
 
 This results in 20 measurements per subject. For example, the first subject in this data set is P02, occupying the first 20 rows, followed by P03, etc. 
 
-This analysis serves as an initial exploration. Ideally, the data should include trial-by-trial measurements (not averages), which would significantly increase temporal resolution and the quality of our statistics. Future analyses will extend this work using raw data instead of the averages, and depending on results, a different model too.
+This analysis serves as an initial exploration. Ideally, the data should include trial-by-trial measurements (not averages), which would significantly increase temporal resolution and the quality of our statistics. 
 
+Future analyses will extend from this project using raw data instead of the averages, and depending on results, a different model too.
 
+### Load data, prep
 
-## Load Data, prep
-```{r}
+```{r prep}
 library(dplyr)
 library(ggplot2)
 library(mgcv) 
 library(lme4) 
 library(boot)
 
-# Load data (git link?)
-pupilDat <- read.csv("~/Desktop/FA24 Syllabi:Schedules/PSY4802_Using_R_to_Create_Reproducible_Research/Final Project/code/quintileData.csv")
+# Load data
+url <- "https://raw.githubusercontent.com/bchisholm08/psy4802_fa24/5ffb123f8c664394d684cdb64290c003aebb085f/Final%20Project/Final%20Project%20Full%20Documentation/earlyVersions/quintileData.csv"
+pupilDat <- read.csv(url)
 ```
 
-## Data Cleaning
-```{r}
-# make sure all data is in proper format for statistics functions
+### Data Cleaning
+```{r cleaning}
+# clean data, prepare for stats 
 pupilDat$SNR <- as.numeric(as.character(pupilDat$SNR))
 pupilDat$Quintile <- as.numeric(as.character(pupilDat$Quintile))
 pupilDat$SubjID <- as.factor(pupilDat$SubjID)
-
-
 ```
 
-## Summary Statistics
-```{r}
-# Calculate summary statistics of SNR and Quintile. Get familiar with data 
+### Summary Statistics
+```{r summary stats}
+# summary stats for SNR and Quintile. Check for data issues
 summary_stats <- pupilDat %>%
   group_by(SNR, Quintile) %>%
   summarise(
     Mean_Dilation = mean(AvgPupilDilation, na.rm = TRUE),
     Med_Dilation = median(AvgPupilDilation, na.rm = TRUE),
-    SD_Dilation = sd(AvgPupilDilation, na.rm = TRUE),
-    Min_Dilation = min(AvgPupilDilation, na.rm = TRUE),
-    Max_Dilation = max(AvgPupilDilation, na.rm = TRUE),
-    Count = n()
-  )
-
+    SD_Dilation = sd(AvgPupilDilation, na.rm = TRUE))
+# print summary stats table 
 print(as.data.frame(summary_stats))
 ```
 
-## Check data distribution
-```{r}
-# Plot histogram and density
+### Check data distribution
+```{r data dist}
+# Plot histogram w/ density overlay 
 ggplot(pupilDat, aes(x = AvgPupilDilation)) +
-  geom_histogram(binwidth = 0.05, color = "black", fill = "skyblue") +
-  geom_density(alpha = 0.7, fill = "purple") +
+  geom_histogram(binwidth = 0.05, color = "black", fill = "#A0B9C6") +
+  geom_density(alpha = 0.7, fill = "#802392") +
   labs(
-    title = "Distribution of Avg Pupil Dilation",
-    subtitle = "Histogram with density plot",
-    x = "Avg Pupil Dilation",
-    y = "Freq."
-  ) +
-  theme_minimal()
+    title = "Avg Pupil Dilation",
+    subtitle = "Density plot in purple",
+    x = "Avg Pupil Dilation (a.u.)",
+    y = "Frequency"
+  )
 ```
 
-## GAMS
-```{r}
-# for mod 1, regular GAM w/o interactions
-gam_mod1 <- gam(AvgPupilDilation ~ s(SNR, k = 4) + s(Quintile, k = 5), data = pupilDat)
-summary(gam_mod1)
-plot(gam_mod1, pages = 1) # groupme
+```{r originalDat corr matrix}
+# Corr matrix for og data
+originalDataCorr <- stats::cor(pupilDat %>% select_if(is.numeric), use = "complete.obs")
+print(originalDataCorr)
 ```
 
-## Mod2
-```{r}
-# mod 2; use a tensor interaction of SNR & quintile 
-# k = total levels of two vars or highest / lowest...? 
-gam_mod2 <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4), data = pupilDat)
-summary(gam_mod2)
-plot(gam_mod2, pages = 1)
+### GAM Models
+
+note; k = knots. Also called lambda. K = number of levels in variable. It tells the GAM function 
+ 
+num of knots dictates flexibility of the smoothing function. Too few knots can underfit; too many can overfit.
+
+num knots based on the complexity of the interaction and stats efficiency/computing power
+```{r GAM mod1}
+# for mod 1, regular GAM with no interactions
+mod1_gam <- gam(AvgPupilDilation ~ s(SNR, k = 4) + s(Quintile, k = 5), data = pupilDat)
+summary(mod1_gam)
+plot(mod1_gam, pages = 1) # groupme
 ```
 
-```{r}
-gam.check(gam_mod2) # diagnostic plots
+```{r} 
+gam.check(mod1_gam) # model diagnostic plots 
 ```
 
-## Mod3
-```{r}
+### Mod2
+```{r GAM mod2}
+# mod 2; use tensor interaction of SNR & quintile 
+mod2_gam <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4), data = pupilDat)
+summary(mod2_gam)
+plot(mod2_gam, pages = 1)
+
+gam.check(mod2_gam) 
+```
+
+### Mod3
+```{r GAM mod3}
 # mod 3, both interactions and random effects 
-gam_mod3 <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4) + s(SNR, k = 4) + s(Quintile, k = 5) + s(SubjID, bs = "re"), data = pupilDat)
-summary(gam_mod3)
-plot(gam_mod3, pages = 1)
+mod3_gam <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4) + s(SNR, k = 4) + s(Quintile, k = 5) + s(SubjID, bs = "re"), data = pupilDat)
+summary(mod3_gam)
+plot(mod3_gam, pages = 1)
+gam.check(mod3_gam)
 ```
 
-## Compare models 
-```{r}
-model_comparison <- data.frame(
+### Compare models 
+```{r compare GAMs}
+gamMods_comparison <- data.frame(
   Model = c("Mod_1", "Mod_2", "Mod_3"),
-  AIC = c(AIC(gam_mod1), AIC(gam_mod2), AIC(gam_mod3)),
-  BIC = c(BIC(gam_mod1), BIC(gam_mod2), BIC(gam_mod3))
-) # start with AIC and BIC 
+  AIC = c(AIC(mod1_gam), AIC(mod2_gam), AIC(mod3_gam)),
+  BIC = c(BIC(mod1_gam), BIC(mod2_gam), BIC(mod3_gam))
+)
 
-knitr::kable(model_comparison, digits = 3, caption = "Model Comparison: AIC & BIC")
+knitr::kable(gamMods_comparison, digits = 3, caption = "AIC & BIC Comparison")
+#FIXME EXPLAIN AIC + BIC 
 ```
 
-## LME 
-```{r}
-# for fun, check GLME model
-lmer_mod <- lmer(AvgPupilDilation ~ SNR * Quintile + (1 | SubjID), data = pupilDat)
-summary(lmer_mod)
+# LME 
+```{r LME mod}
+# for fun, check LME model
+mod4LMER <- lmer(AvgPupilDilation ~ SNR * Quintile + (1 | SubjID), data = pupilDat)
+summary(mod4LMER)
 ```
 
-## plot results
-```{r}
+### plot LME results
+```{r lme plot}
 # scatter pupil & quintile
 ggplot(pupilDat, aes(x = Quintile, y = AvgPupilDilation)) +
-  geom_jitter(alpha = 0.5) +
-  geom_smooth(method = "loess", color = "blue", se = TRUE) +
+  geom_smooth(method = "loess", color = "#6B8F71", se = TRUE) +
   labs(
     title = "Avg Pupil Dilation vs. Quintile",
     x = "Quintile",
-    y = "Avg Pupil Dilation"
+    y = "Avg Pupil Dilation (a.u.)"
   ) +
   theme_minimal()
 ```
 
-## Bootstrapping the Data
-```{r}
-# Define a function for bootstrapping
+# Bootstrap data
+
+One concern with the GAM is that there is not enough data. In the introduction we discussed how the data is organized, with each subject getting 20 rows for each combination of SNR and quintile. This gives us just 47 observations of each condition, which may not be enough for the GAM.
+
+```{r bootstrap}
+# bootstrap function
 bootstrap_sample <- function(data, indices) {
-  d <- data[indices, ]  # Resample with replacement
-  return(d)
-}
-
-# Perform bootstrapping with 1000 replicates
-set.seed(123)  # For reproducibility
-bootstrapped_data <- do.call(rbind, replicate(1000, pupilDat[sample(1:nrow(pupilDat), replace = TRUE), ], simplify = FALSE))
+  d <- data[indices, ]
+  return(d)}
+# bootstrap data & allow replacement
+set.seed(4802)
+bootstrapped_data <- do.call(rbind, 
+                             replicate(50, pupilDat[sample(1:nrow(pupilDat), replace = TRUE), ], simplify = FALSE))
 ```
+use do.call for function args
 
-Rerunning Models with Bootstrapped Data. Not sure of all GAM details, so its possible that the small sample size is creating some issues for the model. 
+note: original data is 20 observations per subject. Bootstrapping assumes each subject is observed just once, so something is not right with the bootstrapped data as a result. 
 
-## mod1 bootstrap
-```{r}
+Rerun models with Bootstrapped Data. Small sample size could be creating some issues for a GAM. 
+
+### Bootstrapped cor matrix
+```{r redo corr}
+# compare correlations
+print(cor(bootstrapped_data %>% select_if(is.numeric), use = "complete.obs"))
+print(originalDataCorr)
+```
+Compare correlations in bootstrapped vs original data before proceeding to modeling
+
+### bootstrap mod1; mod2; mod3
+```{r GAM w/bootstrap}
 # no interactions
-gam_mod1_boot <- gam(AvgPupilDilation ~ s(SNR, k = 4) + s(Quintile, k = 5), data = bootstrapped_data)
-summary(gam_mod1_boot)
-plot(gam_mod1_boot, pages = 1)
+mod1_boot <- gam(AvgPupilDilation ~ s(SNR, k = 4) + s(Quintile, k = 5), data = bootstrapped_data)
+summary(mod1_boot)
+plot(mod1_boot, pages = 1)
+
+# bootstrap mod2 only interaction 
+mod2_boot <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4), data = bootstrapped_data)
+summary(mod2_boot)
+plot(mod2_boot, pages = 1)
+
+# mod3 full bootstrap model 
+mod3_boot <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4) + s(SNR, k = 4) + s(Quintile, k = 5) + s(SubjID, bs = "re"), data = bootstrapped_data)
+summary(mod3_boot) 
+plot(mod3_boot, pages = 1)
+
+#FIXME explain s() and te() functions, bs = "re"
 ```
 
-## mod2 bootstrap
-```{r}
-# interactions 
-gam_mod2_boot <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4), data = bootstrapped_data)
-summary(gam_mod2_boot)
-plot(gam_mod2_boot, pages = 1)
-```
-
-```{r}
-# full bootstrap model 
-gam_mod3_boot <- gam(AvgPupilDilation ~ te(SNR, Quintile, k = 4) + s(SNR, k = 4) + s(Quintile, k = 5) + s(SubjID, bs = "re"), data = bootstrapped_data)
-summary(gam_mod3_boot)
-plot(gam_mod3_boot, pages = 1)
-```
-
-```{r}
-# compare bootstrap models to real models, same criteria 
-model_comparison_boot <- data.frame(
+```{r gpt test code}
+bootMods <- data.frame(
   Model = c("Mod_1_Boot", "Mod_2_Boot", "Mod_3_Boot"),
-  AIC = c(AIC(gam_mod1_boot), AIC(gam_mod2_boot), AIC(gam_mod3_boot)),
-  BIC = c(BIC(gam_mod1_boot), BIC(gam_mod2_boot), BIC(gam_mod3_boot))
+  AIC = c(AIC(mod1_boot), AIC(mod2_boot), AIC(mod3_boot)),
+  BIC = c(BIC(mod1_boot), BIC(mod2_boot), BIC(mod3_boot)),
+  Equation = c(
+    "AvgPupilDilation ~ s(SNR, k=4) + s(Quintile, k=5)",
+    "AvgPupilDilation ~ te(SNR, Quintile, k=4)",
+    "AvgPupilDilation ~ te(SNR, Quintile, k=4) + s(SNR, k=4) + s(Quintile, k=5) + s(SubjID, bs='re')"
+  )
 )
-combined_comparison <- rbind(
-  cbind(model_comparison, Source = "Original"),
-  cbind(model_comparison_boot, Source = "Bootstrapped")
-)
-knitr::kable(combined_comparison, digits = 3, caption = "Model Comparison: Original vs Bootstrapped Data")
+bootMods
 ```
+
+
+#```{r model comp.}
+# compare bootstrap models to real models
+bootMODS <- data.frame(
+  Model = c("Mod_1_Boot", "Mod_2_Boot", "Mod_3_Boot"),
+  AIC = c(AIC(mod1_boot), AIC(mod2_boot), AIC(mod3_boot)),
+  BIC = c(BIC(mod1_boot), BIC(mod2_boot), BIC(mod3_boot)),
+    Equation = c(
+"AvgPupilDilation ~ s(SNR, k=4) + s(Quintile, k=5)",
+"AvgPupilDilation ~ te(SNR, Quintile, k=4)",
+"AvgPupilDilation ~ te(SNR, Quintile, k=4) + s(SNR, k=4) + s(Quintile, k=5) + s(SubjID, bs='re')", 
+"AvgPupilDilation ~ s(SNR, k=4) + s(Quintile, k=5)",
+"AvgPupilDilation ~ te(SNR, Quintile, k=4)",
+"AvgPupilDilation ~ te(SNR, Quintile, k=4) + s(SNR, k=4) + s(Quintile, k=5) + s(SubjID, bs='re')"))
+
+combined_comparison <- rbind(
+  cbind(gamMods_comparison, Source = "Original"),
+  cbind(bootMODS, Source = "Bootstrapped")
+)
+
+knitr::kable(combined_comparison, digits = 3, caption = "Model Comparison: Original vs Bootstrapped Data")
+#```
 
 Models were rerun on the bootstrapped dataset to increase sample size and improve stability. The comparison of AIC and BIC metrics provides insights into whether bootstrapping improves model performance. Interpretations should consider both fit and overfitting risks.
-```{r}
-# Corr matrix for og data
-cor_matrix_original <- stats::cor(pupilDat %>% select_if(is.numeric), use = "complete.obs")
 
-# print matrix
-#stats::corrplot(cor_matrix_original, method = "color", title = "Correlation Matrix: Original Data", mar = c(0,0,1,0))
+### Exploratory, plot LME model with bootstrapped data 
+```{r lme bootstrap}
+LMER_boot <- lmer(AvgPupilDilation ~ SNR * Quintile + (1 | SubjID), data = pupilDat)
+summary(LMER_boot)
+
+# scatter pupil & quintile
+ggplot(bootstrapped_data, aes(x = Quintile, y = AvgPupilDilation)) +
+  geom_smooth(method = "loess", color = "#B57BA6", se = TRUE) +
+  labs(
+    title = "Avg Pupil Dilation vs. Quintile",
+    x = "Quintile",
+    y = "Avg Pupil Dilation (a.u.)"
+  ) +
+  theme_minimal()
 ```
 
- Bootstrapped Data
-```{r}
-# Compute correlation matrix for bootstrapped data
-cor_matrix_bootstrapped <- cor(bootstrapped_data %>% select_if(is.numeric), use = "complete.obs")
-
-# Visualize correlation matrix
-#corrplot(cor_matrix_bootstrapped, method = "color", title = "Correlation Matrix: Bootstrapped Data", mar = c(0,0,1,0))
-```
